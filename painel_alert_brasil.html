@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Alert Brasil — Recrutamento Google Ads</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --purple: #3D1A6E;
+    --purple-light: #EEEDFE;
+    --purple-mid: #7F77DD;
+    --orange: #E8A020;
+    --orange-light: #FAEEDA;
+    --green: #0F9D58;
+    --green-light: #EAF3DE;
+    --green-dark: #27500A;
+    --red: #E24B4A;
+    --red-light: #FCEBEB;
+    --red-dark: #791F1F;
+    --blue-light: #E6F1FB;
+    --blue-dark: #0C447C;
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.08);
+    --text: #1A1A1A;
+    --text-muted: #6B6B6B;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  
+  .topbar { background: var(--purple); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .topbar-logo { display: flex; align-items: center; gap: 10px; }
+  .topbar-logo span { color: #fff; font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+  .topbar-logo .dot { width: 8px; height: 8px; background: var(--orange); border-radius: 50%; }
+  .topbar-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.7); }
+  .status-dot { width: 7px; height: 7px; background: #4ADE80; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .layout { display: flex; min-height: calc(100vh - 56px); }
+  
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 0; flex-shrink: 0; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+  .sidebar-section { padding: 0 1rem; margin-bottom: 1.5rem; }
+  .sidebar-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding: 0 0.75rem; margin-bottom: 6px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-muted); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: all 0.15s; }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--purple-light); color: var(--purple); font-weight: 500; }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-badge { margin-left: auto; background: var(--purple-light); color: var(--purple); border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 600; }
+  .nav-badge.green { background: var(--green-light); color: var(--green-dark); }
+
+  .main { flex: 1; padding: 2rem; overflow-x: hidden; }
+  
+  .page-header { margin-bottom: 1.5rem; }
+  .page-title { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .metric-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .metric-value { font-size: 26px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+  .metric-card.highlight { border-color: var(--purple); background: var(--purple-light); }
+  .metric-card.highlight .metric-value { color: var(--purple); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .b-green { background: var(--green-light); color: var(--green-dark); }
+  .b-red { background: var(--red-light); color: var(--red-dark); }
+  .b-purple { background: var(--purple-light); color: var(--purple); }
+  .b-orange { background: var(--orange-light); color: #633806; }
+  .b-gray { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+  .b-blue { background: var(--blue-light); color: var(--blue-dark); }
+
+  .info-box { background: var(--blue-light); border: 1px solid #85B7EB; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: var(--blue-dark); margin-bottom: 1.5rem; line-height: 1.6; }
+  .warn-box { background: var(--orange-light); border: 1px solid #EF9F27; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: #633806; margin-top: 12px; line-height: 1.6; }
+
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .stat-row:last-child { border-bottom: none; }
+
+  .cidade-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+  .cidade-label { width: 95px; color: var(--text-muted); flex-shrink: 0; }
+  .cidade-bar-wrap { flex: 1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .cidade-fill { height: 100%; background: var(--purple); border-radius: 3px; transition: width 1s ease; }
+  .cidade-count { width: 28px; text-align: right; font-weight: 600; color: var(--text); font-size: 12px; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  .filters select { font-size: 12px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: inherit; cursor: pointer; }
+  .filters select:focus { outline: 2px solid var(--purple); outline-offset: 1px; }
+  .filter-count { margin-left: auto; font-size: 12px; color: var(--text-muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); background: var(--bg); }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF8; }
+
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; cursor: pointer; transition: all 0.15s; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 500; }
+  .btn:hover { background: var(--bg); }
+  .btn.primary { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .btn.primary:hover { background: #2e1255; }
+  .btn.success { background: var(--green); color: #fff; border-color: var(--green); }
+
+  .phase-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 10px; background: var(--surface); transition: border-color 0.2s; }
+  .phase-card:hover { border-color: var(--purple-mid); }
+  .phase-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+
+  .criterio-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 10px; background: var(--surface); }
+  .criterio-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--red-light); font-size: 16px; }
+
+  .sheets-header { background: var(--green); color: #fff; padding: 10px 16px; border-radius: var(--radius) var(--radius) 0 0; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+  .sheets-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+  .sheets-row { display: flex; padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 11px; gap: 8px; }
+  .sheets-row:last-child { border-bottom: none; }
+  .sheets-row.head { background: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .s-name { flex: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .s-tel { flex: 2; min-width: 0; }
+  .s-sm { flex: 1; min-width: 0; text-align: center; }
+
+  .sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .sync-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .metric-grid { grid-template-columns: repeat(2,1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="dot"></div>
+    <span>Alert Brasil — Painel de Recrutamento</span>
+  </div>
+  <div class="topbar-status">
+    <div class="status-dot"></div>
+    Campanha ativa · Google Ads · Campinas e região
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Visão geral</div>
+      <button class="nav-item active" onclick="showTab('dashboard',this)">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showTab('projecao',this)">
+        <span class="icon">📈</span> Projeção
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Candidatos</div>
+      <button class="nav-item" onclick="showTab('leads',this)">
+        <span class="icon">👥</span> Todos os leads
+        <span class="nav-badge">24</span>
+      </button>
+      <button class="nav-item" onclick="showTab('aptos',this)">
+        <span class="icon">✅</span> Aptos
+        <span class="nav-badge green" id="aptos-nav-count">—</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Configuração</div>
+      <button class="nav-item" onclick="showTab('criterios',this)">
+        <span class="icon">🔍</span> Critérios
+      </button>
+      <button class="nav-item" onclick="showTab('sheets',this)">
+        <span class="icon">📋</span> Google Sheets
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content active">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Campanha: Atendente Ativo de Vendas · R$ 2.000/mês · Meta: 540 aptos</div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card highlight">
+          <div class="metric-label">Meta mensal</div>
+          <div class="metric-value">540</div>
+          <div class="metric-sub">aptos / mês</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Leads necessários</div>
+          <div class="metric-value">614</div>
+          <div class="metric-sub">com 88% de aprovação</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Orçamento atual</div>
+          <div class="metric-value">R$ 2k</div>
+          <div class="metric-sub">teto máximo R$ 4.000</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Custo por apto</div>
+          <div class="metric-value">R$ 7,87</div>
+          <div class="metric-sub">histórico R$ 6,91/lead</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        💡 Com R$ 2.000/mês e custo histórico de R$ 6,91/lead → <strong>289 leads → ~254 aptos</strong> (47% da meta). Para atingir 540 aptos são necessários aproximadamente R$ 4.240/mês. Recomendado: começar em R$ 2.000 e escalar conforme os resultados.
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📅 Leads por dia (simulado)</div>
+          <div style="position:relative; height:160px;">
+            <canvas id="chartDia" role="img" aria-label="Leads por dia da semana">Seg 2, Ter 4, Qua 5, Qui 6, Sex 4, Sab 2, Dom 1.</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📍 Leads por cidade (simulado)</div>
+          <div class="cidade-row"><div class="cidade-label">Campinas</div><div class="cidade-bar-wrap"><div class="cidade-fill" style="width:80%"></div></div><div class="cidade-count">10</div></div>
+          <div class="cidade-row"><div class="cidade-label">Hortolândia</div><div class="cidade-bar-wrap"><div class="cidade-fill" style="width:40%"></div></div><div class="cidade-count">5</div></div>
+          <div class="cidade-row"><div class="cidade-label">Sumaré</div><div class="cidade-bar-wrap"><div class="cidade-fill" style="width:32%"></div></div><div class="cidade-count">4</div></div>
+          <div class="cidade-row"><div class="cidade-label">Paulínia</div><div class="cidade-bar-wrap"><div class="cidade-fill" style="width:16%"></div></div><div class="cidade-count">2</div></div>
+          <div class="cidade-row"><div class="cidade-label">Outras</div><div class="cidade-bar-wrap"><div class="cidade-fill" style="width:24%"></div></div><div class="cidade-count">3</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📡 Performance da campanha</div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Impressões</span><strong>4.320</strong></div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Cliques</span><strong>312</strong></div>
+        <div class="stat-row"><span style="color:var(--text-muted)">CTR</span><strong>7,2%</strong></div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Taxa de conversão</span><strong>7,7%</strong></div>
+        <div class="stat-row">
+          <span style="color:var(--text-muted)">Orçamento utilizado</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:140px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;">
+              <div style="width:4.4%;height:100%;background:var(--purple);border-radius:3px;"></div>
+            </div>
+            <strong>R$ 87 / R$ 2.000</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADS -->
+    <div id="tab-leads" class="tab-content">
+      <div class="page-header">
+        <div class="page-title">Todos os leads</div>
+        <div class="page-sub">Triagem automática por cidade, idade e reservista</div>
+      </div>
+      <div class="filters">
+        <select id="f-cidade" onchange="renderLeads()">
+          <option value="">Todas as cidades</option>
+          <option>Campinas</option><option>Hortolândia</option><option>Sumaré</option>
+          <option>Cosmópolis</option><option>Monte Mor</option><option>Nova Odessa</option>
+          <option>Paulínia</option><option>Vinhedo</option>
+        </select>
+        <select id="f-status" onchange="renderLeads()">
+          <option value="">Todos os status</option>
+          <option value="Apto">Aptos</option>
+          <option value="Reprovado">Reprovados</option>
+        </select>
+        <select id="f-sexo" onchange="renderLeads()">
+          <option value="">Qualquer sexo</option>
+          <option value="F">Feminino</option>
+          <option value="M">Masculino</option>
+        </select>
+        <span class="filter-count" id="f-count">24 leads</span>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table>
+          <thead><tr>
+            <th style="width:20%">Nome</th>
+            <th style="width:15%">Telefone</th>
+            <th style="width:13%">Cidade</th>
+            <th style="width:8%;text-align:center">Idade</th>
+            <th style="width:9%;text-align:center">Sexo</th>
+            <th style="width:12%;text-align:center">Reserv.</th>
+            <th style="width:11%;text-align:center">Cidade OK</th>
+            <th style="width:12%">Status</th>
+          </tr></thead>
+          <tbody id="leads-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- APTOS -->
+    <div id="tab-aptos" class="tab-content">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="page-title">Candidatos aptos</div>
+          <div class="page-sub">Aprovados em todos os critérios — prontos para contato</div>
+        </div>
+        <button class="btn success" onclick="alert('Exportação para Google Sheets — configure o script Python para ativar esta função.')">
+          📋 Exportar para Sheets
+        </button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table>
+          <thead><tr>
+            <th style="width:22%">Nome</th>
+            <th style="width:16%">Telefone</th>
+            <th style="width:14%">Cidade</th>
+            <th style="width:9%;text-align:center">Idade</th>
+            <th style="width:9%;text-align:center">Sexo</th>
+            <th style="width:12%;text-align:center">Reservista</th>
+            <th style="width:18%">Status</th>
+          </tr></thead>
+          <tbody id="aptos-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROJEÇÃO -->
+    <div id="tab-projecao" class="tab-content">
+      <div class="page-header">
+        <div class="page-title">Projeção de resultados</div>
+        <div class="page-sub">Baseado no histórico real: R$ 6,91/lead · 88% de aprovação</div>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title">📈 Aptos esperados por fase de orçamento</div>
+        <div style="position:relative;height:240px;">
+          <canvas id="chartProjecao" role="img" aria-label="Projeção de aptos por orçamento mensal">Fase 1 R$2000: 254. Fase 2 R$3000: 381. Fase 3 R$4000: 509. Meta: 540.</canvas>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;background:var(--purple);border-radius:2px;"></span>Aptos esperados</span>
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:3px;background:var(--orange);display:inline-block;"></span>Meta 540 aptos</span>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div class="phase-num" style="background:var(--purple-light);color:var(--purple);">1</div>
+          <div style="font-size:14px;font-weight:600;">Fase inicial — R$ 2.000/mês</div>
+          <span class="badge b-purple" style="margin-left:auto;">Agora</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);padding-left:42px;line-height:1.8;">
+          289 leads esperados · <strong style="color:var(--green-dark);">~254 aptos</strong> · R$ 7,87/apto · 47% da meta
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div class="phase-num" style="background:var(--blue-light);color:var(--blue-dark);">2</div>
+          <div style="font-size:14px;font-weight:600;">Escalonamento — R$ 3.000/mês</div>
+          <span class="badge b-orange" style="margin-left:auto;">Se resultado OK</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);padding-left:42px;line-height:1.8;">
+          434 leads esperados · <strong style="color:var(--green-dark);">~381 aptos</strong> · R$ 7,87/apto · 71% da meta
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div class="phase-num" style="background:var(--green-light);color:var(--green-dark);">3</div>
+          <div style="font-size:14px;font-weight:600;">Teto máximo — R$ 4.000/mês</div>
+          <span class="badge b-gray" style="margin-left:auto;">Pior caso</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);padding-left:42px;line-height:1.8;">
+          579 leads esperados · <strong style="color:var(--green-dark);">~509 aptos</strong> · R$ 7,87/apto · 94% da meta
+        </div>
+      </div>
+
+      <div class="warn-box">
+        ⚠️ Para atingir 540 aptos com 88% de aprovação serão necessários ~R$ 4.240/mês. Recomendamos otimizar o anúncio nas primeiras 2 semanas para reduzir o custo por lead antes de escalar.
+      </div>
+    </div>
+
+    <!-- CRITÉRIOS -->
+    <div id="tab-criterios" class="tab-content">
+      <div class="page-header">
+        <div class="page-title">Critérios de triagem</div>
+        <div class="page-sub">Candidato reprovado automaticamente se falhar em qualquer critério</div>
+      </div>
+
+      <div class="criterio-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <div class="criterio-icon">📍</div>
+          <div style="font-size:15px;font-weight:600;">Critério 1 — Cidade</div>
+          <span class="badge b-red" style="margin-left:auto;">Reprovado se fora da área</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;">
+          <span class="badge b-green">Campinas</span>
+          <span class="badge b-green">Hortolândia</span>
+          <span class="badge b-green">Sumaré</span>
+          <span class="badge b-green">Cosmópolis</span>
+          <span class="badge b-green">Monte Mor</span>
+          <span class="badge b-green">Nova Odessa</span>
+          <span class="badge b-green">Paulínia</span>
+          <span class="badge b-green">Vinhedo</span>
+        </div>
+      </div>
+
+      <div class="criterio-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div class="criterio-icon">👤</div>
+          <div style="font-size:15px;font-weight:600;">Critério 2 — Idade mínima</div>
+          <span class="badge b-red" style="margin-left:auto;">Reprovado se menor de 18</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);">Candidatos com menos de <strong style="color:var(--text);">18 anos</strong> são reprovados automaticamente.</div>
+      </div>
+
+      <div class="criterio-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div class="criterio-icon">🪖</div>
+          <div style="font-size:15px;font-weight:600;">Critério 3 — Reservista</div>
+          <span class="badge b-orange" style="margin-left:auto;">Somente homens</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">
+          <span class="badge b-red" style="margin-right:6px;">Reprovado</span> Homem sem Certificado de Reservista / Dispensa<br>
+          <span class="badge b-green" style="margin-right:6px;margin-top:6px;display:inline-flex;">Aprovado</span> Homem com Reservista &nbsp;·&nbsp; Mulher (não se aplica)
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px 16px;font-size:12px;color:var(--text-muted);margin-top:4px;">
+        ℹ️ Os demais critérios (escolaridade, disponibilidade, informática) são registrados mas não reprovam automaticamente.
+      </div>
+    </div>
+
+    <!-- SHEETS -->
+    <div id="tab-sheets" class="tab-content">
+      <div class="page-header">
+        <div class="page-title">Google Sheets</div>
+        <div class="page-sub">Sincronização automática dos leads aptos</div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title">⚙️ Status da sincronização</div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Planilha destino</span><span style="color:#185FA5;font-weight:500;">Alert Brasil — Leads Google Ads</span></div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Última sincronização</span><strong>Hoje, 14:32</strong></div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Registros exportados</span><strong id="sheets-count">— leads · — aptos</strong></div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Próxima sincronização</span><strong>A cada 30 minutos</strong></div>
+        <div class="stat-row"><span style="color:var(--text-muted)">Notificação</span><strong>atena@alertbrasil.com.br</strong></div>
+      </div>
+
+      <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:var(--text-muted);">Preview — candidatos aptos</div>
+      <div class="sheets-header">
+        📋 Alert Brasil — Leads Google Ads
+        <span style="margin-left:auto;background:#fff;color:var(--green);font-size:10px;padding:2px 10px;border-radius:10px;font-weight:600;">Sincronizado</span>
+      </div>
+      <div class="sheets-body" id="sheets-preview"></div>
+
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn primary" onclick="alert('Configure o script Python para ativar a sincronização automática com o Google Sheets.')">
+          ▶ Ativar sincronização
+        </button>
+        <button class="btn" onclick="alert('Acesse a planilha em: https://docs.google.com/spreadsheets/d/1cD0oub0nxR_GrDuExD9rhEwbOv0aANf86icPCsWYbQA')">
+          🔗 Abrir planilha
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const CIDADES_OK = ['Campinas','Hortolândia','Sumaré','Cosmópolis','Monte Mor','Nova Odessa','Paulínia','Vinhedo'];
+
+const LEADS = [
+  {nome:'Maria Silva',tel:'(19) 99101-0001',cidade:'Campinas',idade:22,sexo:'F',reserv:'N/A'},
+  {nome:'João Santos',tel:'(19) 99101-0002',cidade:'Sumaré',idade:25,sexo:'M',reserv:'Sim'},
+  {nome:'Ana Costa',tel:'(19) 99101-0003',cidade:'Campinas',idade:17,sexo:'F',reserv:'N/A'},
+  {nome:'Carlos Lima',tel:'(19) 99101-0004',cidade:'Hortolândia',idade:30,sexo:'M',reserv:'Sim'},
+  {nome:'Fernanda Rocha',tel:'(19) 99101-0005',cidade:'Campinas',idade:19,sexo:'F',reserv:'N/A'},
+  {nome:'Rafael Souza',tel:'(19) 99101-0006',cidade:'Valinhos',idade:23,sexo:'M',reserv:'Sim'},
+  {nome:'Juliana Martins',tel:'(19) 99101-0007',cidade:'Campinas',idade:28,sexo:'F',reserv:'N/A'},
+  {nome:'Bruno Alves',tel:'(19) 99101-0008',cidade:'Sumaré',idade:21,sexo:'M',reserv:'Não'},
+  {nome:'Camila Ferreira',tel:'(19) 99101-0009',cidade:'Hortolândia',idade:24,sexo:'F',reserv:'N/A'},
+  {nome:'Diego Pereira',tel:'(19) 99101-0010',cidade:'Campinas',idade:26,sexo:'M',reserv:'Sim'},
+  {nome:'Larissa Gomes',tel:'(19) 99101-0011',cidade:'Cosmópolis',idade:20,sexo:'F',reserv:'N/A'},
+  {nome:'Thiago Oliveira',tel:'(19) 99101-0012',cidade:'Campinas',idade:29,sexo:'M',reserv:'Sim'},
+  {nome:'Patrícia Nunes',tel:'(19) 99101-0013',cidade:'Hortolândia',idade:22,sexo:'F',reserv:'N/A'},
+  {nome:'Lucas Ribeiro',tel:'(19) 99101-0014',cidade:'Vinhedo',idade:18,sexo:'M',reserv:'Sim'},
+  {nome:'Aline Castro',tel:'(19) 99101-0015',cidade:'Campinas',idade:31,sexo:'F',reserv:'N/A'},
+  {nome:'Marcos Teixeira',tel:'(19) 99101-0016',cidade:'Sumaré',idade:27,sexo:'M',reserv:'Sim'},
+  {nome:'Vanessa Dias',tel:'(19) 99101-0017',cidade:'Campinas',idade:16,sexo:'F',reserv:'N/A'},
+  {nome:'Eduardo Melo',tel:'(19) 99101-0018',cidade:'Hortolândia',idade:23,sexo:'M',reserv:'Sim'},
+  {nome:'Sabrina Freitas',tel:'(19) 99101-0019',cidade:'Nova Odessa',idade:19,sexo:'F',reserv:'N/A'},
+  {nome:'Rodrigo Barbosa',tel:'(19) 99101-0020',cidade:'Paulínia',idade:25,sexo:'M',reserv:'Não'},
+  {nome:'Tatiane Lopes',tel:'(19) 99101-0021',cidade:'Monte Mor',idade:22,sexo:'F',reserv:'N/A'},
+  {nome:'Vitor Cardoso',tel:'(19) 99101-0022',cidade:'Hortolândia',idade:20,sexo:'M',reserv:'Sim'},
+  {nome:'Priscila Moura',tel:'(19) 99101-0023',cidade:'Campinas',idade:24,sexo:'F',reserv:'N/A'},
+  {nome:'Anderson Reis',tel:'(19) 99101-0024',cidade:'Vinhedo',idade:28,sexo:'M',reserv:'Sim'},
+];
+
+function getStatus(l) {
+  if (!CIDADES_OK.includes(l.cidade)) return {ok:false,motivo:'Cidade fora da área'};
+  if (l.idade < 18) return {ok:false,motivo:'Menor de 18 anos'};
+  if (l.sexo==='M' && l.reserv!=='Sim') return {ok:false,motivo:'Sem reservista'};
+  return {ok:true,motivo:''};
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function renderLeads() {
+  const cidade = document.getElementById('f-cidade').value;
+  const status = document.getElementById('f-status').value;
+  const sexo = document.getElementById('f-sexo').value;
+  const data = LEADS.filter(l => {
+    const s = getStatus(l);
+    if (cidade && l.cidade!==cidade) return false;
+    if (status==='Apto' && !s.ok) return false;
+    if (status==='Reprovado' && s.ok) return false;
+    if (sexo && l.sexo!==sexo) return false;
+    return true;
+  });
+  document.getElementById('f-count').textContent = data.length + ' leads';
+  document.getElementById('leads-body').innerHTML = data.map(l=>{
+    const s = getStatus(l);
+    const cidOk = CIDADES_OK.includes(l.cidade);
+    return `<tr>
+      <td style="font-weight:500">${l.nome}</td>
+      <td style="color:var(--text-muted);font-size:11px">${l.tel}</td>
+      <td>${l.cidade}</td>
+      <td style="text-align:center">${l.idade}</td>
+      <td style="text-align:center"><span class="badge ${l.sexo==='F'?'b-purple':'b-blue'}">${l.sexo==='F'?'Fem':'Masc'}</span></td>
+      <td style="text-align:center;font-size:11px;color:var(--text-muted)">${l.reserv}</td>
+      <td style="text-align:center">${cidOk?'✅':'❌'}</td>
+      <td><span class="badge ${s.ok?'b-green':'b-red'}" title="${s.motivo}">${s.ok?'Apto':'Reprovado'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAptos() {
+  const aptos = LEADS.filter(l=>getStatus(l).ok);
+  document.getElementById('aptos-nav-count').textContent = aptos.length;
+  document.getElementById('sheets-count').textContent = LEADS.length + ' leads · ' + aptos.length + ' aptos';
+  document.getElementById('aptos-body').innerHTML = aptos.map(l=>`
+    <tr>
+      <td style="font-weight:500">${l.nome}</td>
+      <td style="color:var(--text-muted);font-size:11px">${l.tel}</td>
+      <td>${l.cidade}</td>
+      <td style="text-align:center">${l.idade}</td>
+      <td style="text-align:center"><span class="badge ${l.sexo==='F'?'b-purple':'b-blue'}">${l.sexo==='F'?'Fem':'Masc'}</span></td>
+      <td style="text-align:center;font-size:11px">${l.reserv}</td>
+      <td><span class="badge b-green">✓ Aprovado</span></td>
+    </tr>`).join('');
+}
+
+function renderSheets() {
+  const aptos = LEADS.filter(l=>getStatus(l).ok).slice(0,6);
+  document.getElementById('sheets-preview').innerHTML =
+    '<div class="sheets-row head"><div class="s-name">Nome</div><div class="s-tel">Telefone</div><div class="s-sm">Cidade</div><div class="s-sm">Idade</div><div class="s-sm">Status</div></div>' +
+    aptos.map(l=>`<div class="sheets-row"><div class="s-name">${l.nome}</div><div class="s-tel">${l.tel}</div><div class="s-sm">${l.cidade}</div><div class="s-sm">${l.idade} anos</div><div class="s-sm"><span class="badge b-green" style="font-size:10px">Apto</span></div></div>`).join('');
+}
+
+renderLeads();
+renderAptos();
+renderSheets();
+
+new Chart(document.getElementById('chartDia'),{
+  type:'bar',
+  data:{labels:['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],datasets:[{label:'Leads',data:[2,4,5,6,4,2,1],backgroundColor:'#3D1A6E',borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11},stepSize:2}}}}
+});
+
+new Chart(document.getElementById('chartProjecao'),{
+  type:'bar',
+  data:{
+    labels:['Fase 1 — R$ 2.000','Fase 2 — R$ 3.000','Fase 3 — R$ 4.000'],
+    datasets:[
+      {label:'Aptos esperados',data:[254,381,509],backgroundColor:'#3D1A6E',borderRadius:4},
+      {label:'Meta (540)',data:[540,540,540],type:'line',borderColor:'#E8A020',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{max:600,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}}}}}
+});
+</script>
+</body>
+</html>
